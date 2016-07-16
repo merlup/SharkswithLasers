@@ -11,15 +11,12 @@ import threading
 
 #### Initialize Pygame
 
-pygame.joystick.init()
-#joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 pygame.init()
+pygame.joystick.init()
+#joystick = pygame.joystick.Joystick(0)
+#joystick.init()
 
-
-for i in range(0, pygame.joystick.get_count()):
-	joysticks.append(pygame.joystick.Joystick(1))
-	joysticks(-1).init()
-	print("Detected joystick: " + joysticks[-1].get_name())
+joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 
 #Create Threads Object for Running motors at the same time
 st1 = threading.Thread()
@@ -85,7 +82,7 @@ atexit.register(turnOffMotors)
 #Creating the Stepper Motor Object
 PlayerBlueStepper = MotorHat.getStepper(100, 1)       # 200 steps/rev, motor port #1
 PlayerBlueStepper.setSpeed(30)                  # 30 RPM
-PlayerRedStepper = MotorHat.getStepper(100, 1)
+PlayerRedStepper = MotorHat.getStepper(100, 2)
 PlayerRedStepper.setSpeed(30)
 
 #Moving Motor
@@ -128,6 +125,10 @@ def setServoPulse(channel, pulse):
   pulse *= 1000
   pulse /= pulseLength
   pwm.setPWM(channel, 2, pulse)
+  pwm.setPWM(channel, 3, pulse)
+  pwm.setPWM(4, 4, pulse)
+
+pwm.setPWMFreq(60)
 
 # Initialize Servo Values
 Blue_Servo_Row_1_A=Servo()
@@ -308,53 +309,50 @@ if Blue_Target_Sensor == "High":
 if Red_Target_Sensor == "High":
 	Player_Blue.TakeDamage(1)
  
-if not st1.isAlive():
-	st1 = threading.Thread(target=stepper_worker, args=(PlayerBlueStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
-st1.start()
-if not st2.isAlive():
-        st2 = threading.Thread(target=stepper_worker, args=(PlayerRedStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
-st2.start()
-
-try:
-	while True:
-        	#if not st1.isAlive():
-			#st1 = threading.Thread(target = stepper_worker, args=(PlayerBlueStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
-       		#st1.start()
-        	#if not st2.isAlive():
-			#st2 = threading.Thread(target = stepper_worker, args=(PlayerRedStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
-       		#st2.start()
-       		pwm.setPWM(2, 2, servoMin)
-		pwm.setPWM(3, 3, servoMin)
-		pwm.setPWM(4, 4, servoMin)
+while True:
+	if not st1.isAlive():
+		st1 = threading.Thread(target = stepper_worker, args=(PlayerBlueStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
+       		st1.start()
+	if not st2.isAlive():
+		st2 = threading.Thread(target = stepper_worker, args=(PlayerRedStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
+       		st2.start()
+       	pwm.setPWM(2, 2, servoMin)
+	pwm.setPWM(3, 3, servoMin)
+	pwm.setPWM(4, 4, servoMin)
+	pwm.setPWM(5, 5, servoMin)
   #	time.sleep(1)
-  		pwm.setPWM(2, 2, servoMax)
-		pwm.setPWM(3, 3, servoMax)
-		pwm.setPWM(4, 4, servoMax)
+  	pwm.setPWM(2, 2, servoMax)
+	pwm.setPWM(3, 3, servoMax)
+	pwm.setPWM(4, 4, servoMax)
+	pwm.setPWM(5, 5, servoMax)
   #	time.sleep(1)
 
-		#for event in pygame.event.get():
-			#for stick in Sticks:
-				#print("sticks=" + str(len(Sticks)))
-				#axes = joysticks[0].get_numaxes()
-				
-				#for i in range(axes):	
-                			#axis = joysticks[0].get_axis(0)
+	for event in pygame.event.get():
+		joystick_count = pygame.joystick.get_count()
+
+	#for i in range(joystick_count):
+	bluestick = pygame.joystick.Joystick(0)
+	bluestick.init() 
+		
+	redstick = pygame.joystick.Joystick(1)
+	redstick.init()
+		
+	axes = bluestick.get_numaxes()
+	axes2 = redstick.get_numaxes()	
+	for i in range(axes):	
+               	axis = bluestick.get_axis(0)
                 			
-                			#if axis < 0:
-                        			#MoveBlueSharkRight()
-					#if axis > 0:
-						#MoveBlueSharkLeft()
-					#if axis == 0:
-						#BlueSharkStop()
-				#axes2 = joysticks[1].get_numaxes()
-				#for i in range(axes2):
-					#axis2 = joysticks[1].get_axis(0)
-					#if axis2 > 0:
-						#print("Red")
-						#MoveRedSharkLeft()
-					#if axis2 < 0:
-						#MoveRedSharkRight()
-					#if axis2 == 0:
-						#RedSharkStop()
-finally: 
-	print("End")
+               	if axis < 0:
+                       	MoveBlueSharkRight()
+		if axis > 0:
+			MoveBlueSharkLeft()
+		if axis == 0:
+			BlueSharkStop()
+	for i in range(axes2):
+		axis2 = joysticks[1].get_axis(0)
+		if axis2 > 0:
+			MoveRedSharkLeft()
+		if axis2 < 0:
+			MoveRedSharkRight()
+		if axis2 == 0:
+			RedSharkStop()
