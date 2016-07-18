@@ -1,31 +1,33 @@
 
 #!/usr/bin/python
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_StepperMotor
+from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_StepperMotor
 from Adafruit_PWM_Servo_Driver import PWM
+import RPi.GPIO as GPIO
 import pygame
 import time
 import atexit
 from time import sleep
 import threading
 
+# Setup GPIO 
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
 
 #### Initialize Pygame
 
 pygame.init()
 pygame.joystick.init()
-#joystick = pygame.joystick.Joystick(0)
-#joystick.init()
-
 joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 
 #Create Threads Object for Running motors at the same time
-st1 = threading.Thread()
-st2 = threading.Thread()
+MotorThread1 = threading.Thread()
+MotorThread2 = threading.Thread()
 
 def stepper_worker(stepper, numsteps, direction, style):
 	stepper.step(numsteps, direction, style)
-######
-# Classes and Methods
+
+# Classes
+
 class Servo:
 	
 	def SetName(self, name):
@@ -39,6 +41,8 @@ class Servo:
 	
 	def SetPosition(self, position):
 		self.posiion = position
+	def SetStatus(self, status):
+		self.status = status
 		
 class Player:
 	
@@ -67,36 +71,34 @@ class Player:
 # Setting the MotorHat I2C address
 MotorHat = Adafruit_MotorHAT(addr = 0x60)
 
-
 #Turn Off Motor On Exit
-
 def turnOffMotors():
         MotorHat.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
         MotorHat.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
         MotorHat.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
         MotorHat.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
- 
 atexit.register(turnOffMotors)
 
 
 #Creating the Stepper Motor Object
-PlayerBlueStepper = MotorHat.getStepper(100, 1)       # 200 steps/rev, motor port #1
-PlayerBlueStepper.setSpeed(30)                  # 30 RPM
+
+PlayerBlueStepper = MotorHat.getStepper(100, 1)       
+PlayerBlueStepper.setSpeed(30)                 
 PlayerRedStepper = MotorHat.getStepper(100, 2)
 PlayerRedStepper.setSpeed(30)
 
 #Moving Motor
 def MoveBlueSharkLeft():
 	PlayerBlueStepper.step(1, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
-	print("Moving Left")
+	print("Blue Shark Left")
 def MoveBlueSharkRight():
-	print("Moving right")
+	print("Blue Shark right")
 	PlayerBlueStepper.step(1, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.DOUBLE)
 def BlueSharkStop():
 	turnOffMotors()
 def RedSharkStop():
 	turnOffMotors()
-#PlayerBlueStepper.step(0, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
+
 def MoveBlueSharkRightSlowed():
 	print("Moving Right Slowed")	
 	PlayerBlueStepper.step(100, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.DOUBLE)
@@ -110,7 +112,7 @@ def MoveRedSharkLeft():
 def MoveRedSharkRight():
 	print("Red Shark Right")
 	PlayerRedStepper.step(1, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
-
+	
 # Initialise the PWM device using the default address
 pwm = PWM(0x40)
 servoMin = 150  # Min pulse length out of 4096
@@ -131,57 +133,107 @@ def setServoPulse(channel, pulse):
 pwm.setPWMFreq(60)
 
 # Initialize Servo Values
-Blue_Servo_Row_1_A=Servo()
-Blue_Servo_Row_1_A.SetName("B_R1_A")
-Blue_Servo_Row_1_A.SetOwner("Open")
-Blue_Servo_Row_1_A.SetLED("Off")
 
-Blue_Servo_Row_1_B=Servo()
-Blue_Servo_Row_1_B.SetName("B_R1_B")
-Blue_Servo_Row_1_B.SetOwner("Open")
-Blue_Servo_Row_1_B.SetLED("Off")
+B1_A = Servo()
+B1_A.SetName("B_R1_A")
+B1_A.SetOwner("Open")
+B1_A.SetLED("Off")
+B1_A.SetStatus("UnActive")
 
-Blue_Servo_Row_2_A=Servo()
-Blue_Servo_Row_2_A.SetName("B_R2_A")
-Blue_Servo_Row_2_A.SetOwner("Open")
-Blue_Servo_Row_2_A.SetLED("Off")
+B1_B = Servo()
+B1_B.SetName("B_R1_B")
+B1_B.SetOwner("Open")
+B1_B.SetLED("Off")
+B1_B.SetStatus("UnActive")
 
-Blue_Servo_Row_2_B=Servo()
-Blue_Servo_Row_2_B.SetName("B_R2_B")
-Blue_Servo_Row_2_B.SetOwner("Open")
-Blue_Servo_Row_2_B.SetLED("Off")
+B2_A = Servo()
+B2_A.SetName("B_R2_A")
+B2_A.SetOwner("Open")
+B2_A.SetLED("Off")
+B2_A.SetStatus("UnActive")
 
-Blue_Servo_Row_3_A=Servo()
-Blue_Servo_Row_3_A.SetName("B_R3_A")
-Blue_Servo_Row_3_A.SetOwner("Open")
-Blue_Servo_Row_3_A.SetLED("Off")
+B2_B = Servo()
+B2_B.SetName("R_R2_B")
+B2_B.SetOwner("Open")
+B2_B.SetLED("Off")
+B2_B.SetStatus("UnActive")
+
+B3_A = Servo()
+B3_A.SetName("R_R3_A")
+B3_A.SetOwner("Open")
+B3_A.SetLED("Off")
+B3_A.SetStatus("UnActive")
+
+R1_A = Servo()
+R1_A.SetName("R_R1_A")
+R1_A.SetOwner("Open")
+R1_A.SetLED("Off")
+R1_A.SetStatus("UnActive")
+
+R1_B = Servo()
+R1_B.SetName("R_R1_B")
+R1_B.SetOwner("Open")
+R1_B.SetLED("Off")
+R1_B.SetStatus("UnActive")
+
+R2_A = Servo()
+R2_A.SetName("R_R2_A")
+R2_A.SetOwner("Open")
+R2_A.SetLED("Off")
+R2_A.SetStatus("UnActive")
+
+R2_B = Servo()
+R2_B.SetName("R_R2_B")
+R2_B.SetOwner("Open")
+R2_B.SetLED("Off")
+R2_B.SetStatus("UnActive")
+
+R3_A = Servo()
+R3_A.SetName("R_R3_A")
+R3_A.SetOwner("Open")
+R3_A.SetLED("Off")
+R3_A.SetStatus("UnActive")
+
+# Create Lights for Red , Blue, and Open for each servo
+
+L_B1_A = 4
+L_R1_A = 17
+L_O1_A = 18
+
+GPIO.setup(L_B1_A, GPIO.OUT)
+GPIO.setup(L_R1_A, GPIO.OUT)
+GPIO.setup(L_O1_A, GPIO.OUT)
+
+L_B1_B = 27
+L_R1_B = 22
+L_O1_B = 23
+
+GPIO.setup(L_B1_B, GPIO.OUT)
+GPIO.setup(L_R1_B, GPIO.OUT)
+GPIO.setup(L_O1_B, GPIO.OUT)
+
+L_B2_A = 24
+L_R2_A = 25
+L_O2_A = 5
+
+GPIO.setup(L_B2_A, GPIO.OUT)
+GPIO.setup(L_R2_A, GPIO.OUT)
+GPIO.setup(L_O2_A, GPIO.OUT)
+
+L_B2_B = 6
+L_R2_B = 12
+L_O2_B = 13
+
+GPIO.setup(L_B2_B, GPIO.OUT)
+GPIO.setup(L_R2_B, GPIO.OUT)
+GPIO.setup(L_O2_B, GPIO.OUT)
 
 
-Red_Servo_Row_1_A=Servo()
-Red_Servo_Row_1_A.SetName("R_R1_A")
-Red_Servo_Row_1_A.SetOwner("Open")
-Red_Servo_Row_1_A.SetLED("Off")
 
 
-Red_Servo_Row_1_B=Servo()
-Red_Servo_Row_1_B.SetName("R_R1_B")
-Red_Servo_Row_1_B.SetOwner("Open")
-Red_Servo_Row_1_B.SetLED("Off")
+# MultiDimensional Array
 
-Red_Servo_Row_2_A=Servo()
-Red_Servo_Row_2_A.SetName("R_R2_A")
-Red_Servo_Row_2_A.SetOwner("Open")
-Red_Servo_Row_2_A.SetLED("Off")
-
-Red_Servo_Row_2_B=Servo()
-Red_Servo_Row_2_B.SetName("R_R2_B")
-Red_Servo_Row_2_B.SetOwner("Open")
-Red_Servo_Row_2_B.SetLED("Off")
-
-Red_Servo_Row_3_A=Servo()
-Red_Servo_Row_3_A.SetName("R_R3_A")
-Red_Servo_Row_3_A.SetOwner("Open")
-Red_Servo_Row_3_A.SetLED("Off")
+Field = [[B1_A,B1_B],[B2_A,B2_B],[B3_A],[R3_A],[R2_A,R2_B],[R1_A,R1_B]]
 
 # Initialize Player Values 	
 Player_Blue=Player()
@@ -196,21 +248,30 @@ Player_Red.PlayerLives(3)
 
 #Array of Servos
 
-Blue_Side = [
-	Blue_Servo_Row_1_A,
-	Blue_Servo_Row_1_B,
-	Blue_Servo_Row_2_A,
-	Blue_Servo_Row_2_B,
-	Blue_Servo_Row_3_A
-]
 
-Red_Side = [
-	Red_Servo_Row_1_A,
-	Red_Servo_Row_1_B,
-	Red_Servo_Row_2_A,
-	Red_Servo_Row_2_B,
-	Red_Servo_Row_3_A
-]
+
+def MoveUp():
+        for servo in Field:
+                if servo.status == "Active":
+               # current_position = index of servo
+                	if servo == 3 or 4 :
+                        	new_position = current_postion + 1
+                        	current_position = new_position
+                        	old_position = current_position - 1
+                        	servo(old_position).SetStatus("UnActive")
+                	else:
+                        	new_position = current_position + 2
+                        	current_position = new_position
+                        	old_position = current_position - 2
+                        	old_position.SetStatus("UnActive")
+                
+
+#def MoveDown():
+
+#def MoveLeft():
+
+#def MoveRight():
+
 
 # Timers and Sensors
 Blue_Attack_Timer = range(10)
@@ -231,17 +292,6 @@ def ChangeServoNormal(Servo):
 	Servo.SetOwner("Open")
 	Servo.SetLED("Open")
 
-def Defense_Blue():
-		for servo in Blue_Side:
-			if servo.controlled_by == "Red":
-				ChangeServoNormal(servo)
-				print("Defense")
-			
-def Defense_Red():
-	for servo in Red_Side:
-		if servo.controlled_by == "Blue":
-			ChangeServoNormal(servo)
-			print("Defense")
 
 def Restore_Blue():
 	for servo in Blue_Side:
@@ -254,14 +304,19 @@ def Restore_Red():
 		if servo.controlled_by == "Blue":
 			ChangeServoNormal(servo)
 			print("Restored")
-	
-def Start_Blue_Attack():
-#Wait 10 seconds before restoring power
-	Restore_Red()	
-	
-def Start_Red_Attack():
-#Wait 10 seconds before restoring power
-	Restore_Blue()
+def Defense_Blue():
+		for servo in Blue_Side:
+			if servo.controlled_by == "Red":
+				ChangeServoNormal(servo)
+				print("Defense")
+				Restore_Blue()
+			
+def Defense_Red():
+	for servo in Red_Side:
+		if servo.controlled_by == "Blue":
+			ChangeServoNormal(servo)
+			print("Defense")
+			Restore_Red()
 
 def Attack_Blue():
 	for servo in Red_Side:
@@ -310,27 +365,20 @@ if Red_Target_Sensor == "High":
 	Player_Blue.TakeDamage(1)
  
 while True:
-	if not st1.isAlive():
-		st1 = threading.Thread(target = stepper_worker, args=(PlayerBlueStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
-       		st1.start()
-	if not st2.isAlive():
-		st2 = threading.Thread(target = stepper_worker, args=(PlayerRedStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
-       		st2.start()
-       	pwm.setPWM(2, 2, servoMin)
-	pwm.setPWM(3, 3, servoMin)
-	pwm.setPWM(4, 4, servoMin)
-	pwm.setPWM(5, 5, servoMin)
-  #	time.sleep(1)
-  	pwm.setPWM(2, 2, servoMax)
-	pwm.setPWM(3, 3, servoMax)
-	pwm.setPWM(4, 4, servoMax)
-	pwm.setPWM(5, 5, servoMax)
-  #	time.sleep(1)
 
+        #Start Threads 
+	if not MotorThread1.isAlive():
+		MotorThread1 = threading.Thread(target = stepper_worker, args=(PlayerBlueStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
+       		MotorThread1.start()
+	if not MotorThread2.isAlive():
+                MotorThread2 = threading.Thread(target = stepper_worker, args=(PlayerRedStepper, 100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE))
+       		MotorThread2.start()
+
+       	#Start Watching Events	
 	for event in pygame.event.get():
 		joystick_count = pygame.joystick.get_count()
 
-	#for i in range(joystick_count):
+	#Initialize Controllers
 	bluestick = pygame.joystick.Joystick(0)
 	bluestick.init() 
 		
@@ -356,3 +404,6 @@ while True:
 			MoveRedSharkRight()
 		if axis2 == 0:
 			RedSharkStop()
+        
+                
+	
