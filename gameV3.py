@@ -198,13 +198,13 @@ R3_A.SetStatus("UnActive")
 
 L_B1_A = 4
 L_R1_A = 17
-L_O1_A = 18
+L_O1_A = 22
 
-GPIO.setup(L_B1_A, GPIO.OUT)
-GPIO.setup(L_R1_A, GPIO.OUT)
-GPIO.setup(L_O1_A, GPIO.OUT)
+GPIO.setup(1, GPIO.OUT)
+GPIO.setup(0, GPIO.OUT)
+GPIO.setup(14, GPIO.OUT)
 
-L_B1_B = 27
+L_B1_B = 18
 L_R1_B = 22
 L_O1_B = 23
 
@@ -231,9 +231,82 @@ GPIO.setup(L_O2_B, GPIO.OUT)
 
 
 
-# MultiDimensional Array
+Field = [B1_A, B1_B, B2_A, B2_B, B3_A, R3_A, R2_A, R2_B, R1_A, R1_B]
 
-Field = [[B1_A,B1_B],[B2_A,B2_B],[B3_A],[R3_A],[R2_A,R2_B],[R1_A,R1_B]]
+# Set a Square Status Active
+
+B1_A.status ="Active"
+
+def MoveUp():
+        for i in Field:
+                if i.status == "Active":
+                        if Field.index(i) == 4:
+                          current_position = Field.index(i)
+                          print(current_position)
+                          new_position = current_position + 1
+                          print(new_position)
+                          old_position = new_position - 1
+                          print(old_position)
+                          Field[new_position].status = "Active"
+                          Field[old_position].status = "UnActive"
+                          
+                        else:
+                          current_position = Field.index(i)
+                          print(current_position)
+                          new_position = current_position + 2
+                          print(new_position)
+                          old_position = new_position - 2
+                          print(old_position)
+                          Field[new_position].status = "Active"
+                          Field[old_position].status = "UnActive"
+                          return
+def MoveDown():
+        for i in Field:
+                if i.status == "Active":
+                        if Field.index(i) == 4:
+                          current_position = Field.index(i)
+                          print(current_position)
+                          new_position = current_position - 1
+                          print(new_position)
+                          old_position = new_position + 1
+                          print(old_position)
+                          Field[new_position].status = "Active"
+                          Field[old_position].status = "UnActive"
+                          
+                        else:
+                          current_position = Field.index(i)
+                          print(current_position)
+                          new_position = current_position - 2
+                          print(new_position)
+                          old_position = new_position + 2
+                          print(old_position)
+                          Field[new_position].status = "Active"
+                          Field[old_position].status = "UnActive"
+                          return
+def MoveLeft():
+        for i in Field:
+                if i.status == "Active":
+                          current_position = Field.index(i)
+                          print(current_position)
+                          new_position = current_position - 1
+                          print(new_position)
+                          old_position = new_position +1
+                          print(old_position)
+                          Field[new_position].status = "Active"
+                          Field[old_position].status = "UnActive"
+                          return
+def MoveRight():
+        for i in Field:
+                if i.status == "Active":
+                          current_position = Field.index(i)
+                          print(current_position)
+                          new_position = current_position + 1
+                          print(new_position)
+                          old_position = new_position - 1
+                          print(old_position)
+                          Field[new_position].status = "Active"
+                          Field[old_position].status = "UnActive"
+                          return
 
 # Initialize Player Values 	
 Player_Blue=Player()
@@ -246,31 +319,6 @@ Player_Red.PlayerName("Red")
 Player_Red.PlayerHealth(100)
 Player_Red.PlayerLives(3)
 
-#Array of Servos
-
-
-
-def MoveUp():
-        for servo in Field:
-                if servo.status == "Active":
-               # current_position = index of servo
-                	if servo == 3 or 4 :
-                        	new_position = current_postion + 1
-                        	current_position = new_position
-                        	old_position = current_position - 1
-                        	servo(old_position).SetStatus("UnActive")
-                	else:
-                        	new_position = current_position + 2
-                        	current_position = new_position
-                        	old_position = current_position - 2
-                        	old_position.SetStatus("UnActive")
-                
-
-#def MoveDown():
-
-#def MoveLeft():
-
-#def MoveRight():
 
 
 # Timers and Sensors
@@ -391,11 +439,20 @@ while True:
                	axis = bluestick.get_axis(0)
                 			
                	if axis < 0:
+                        GPIO.output(14, False)
+                        GPIO.output(0, False)
+                       	GPIO.output(1, True)
                        	MoveBlueSharkRight()
 		if axis > 0:
 			MoveBlueSharkLeft()
+			GPIO.output(14, False)
+			GPIO.output(0, False)
+			GPIO.output(1, True)
 		if axis == 0:
 			BlueSharkStop()
+			GPIO.output(0, False)
+			GPIO.output(1, False)
+			GPIO.output(14, True)
 	for i in range(axes2):
 		axis2 = joysticks[1].get_axis(0)
 		if axis2 > 0:
